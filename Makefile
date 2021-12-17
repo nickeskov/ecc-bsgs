@@ -2,7 +2,7 @@ export GO111MODULE=on
 
 SOURCE_DIRS = cmd pkg
 
-.PHONY: vendor vetcheck fmtcheck clean build gotest mod-clean
+.PHONY: vendor vetcheck fmtcheck clean build gotest gobench mod-clean
 
 all: vendor vetcheck fmtcheck build gotest mod-clean
 
@@ -24,6 +24,9 @@ build:
 
 gotest:
 	go test -cover -race -covermode=atomic ./...
+
+gobench:
+	go test -bench=. ./...
 
 mod-clean:
 	go mod tidy

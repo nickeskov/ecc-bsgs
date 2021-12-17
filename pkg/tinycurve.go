@@ -28,6 +28,10 @@ func (p Point) String() string {
 	return fmt.Sprintf("(%x,%x)", p.X, p.Y)
 }
 
+func (p Point) Equals(other Point) bool {
+	return p.X.Cmp(other.X) == 0 && p.Y.Cmp(other.Y) == 0
+}
+
 func (p Point) keyBytes() []byte {
 	xBytes := p.X.Bytes()
 	yBytes := p.Y.Bytes()
