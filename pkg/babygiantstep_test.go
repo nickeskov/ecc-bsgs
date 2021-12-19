@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
@@ -24,7 +25,7 @@ func (n noopBenchTimer) StopTimer() {
 	// noop
 }
 
-func runEccLogBSGS(curve elliptic.Curve, bt benchTimer) error {
+func runEccLogBSGS(curve elliptic.Curve, bt benchTimer, threads int) error {
 	params := curve.Params()
 
 	var (
@@ -46,7 +47,7 @@ func runEccLogBSGS(curve elliptic.Curve, bt benchTimer) error {
 	}
 
 	bt.StartTimer()
-	logarithm, _, err := EccLogBSGS(curve, p, q)
+	logarithm, _, err := EccLogBSGS(context.TODO(), threads, curve, p, q)
 	bt.StopTimer()
 
 	if err != nil {
@@ -61,25 +62,49 @@ func runEccLogBSGS(curve elliptic.Curve, bt benchTimer) error {
 	return nil
 }
 
-func BenchmarkEccLogBSGS(b *testing.B) {
+func BenchmarkEccLogBSGS_SingleThread(b *testing.B) {
 	curve := TinyCurve
 
 	b.ReportAllocs()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
-		if err := runEccLogBSGS(curve, b); err != nil {
+		if err := runEccLogBSGS(curve, b, 1); err != nil {
 			b.Fatal(err)
 		}
 	}
 	b.StartTimer()
 }
 
-func TestEccLogBSGS(t *testing.T) {
+func BenchmarkEccLogBSGS_MultiThread(b *testing.B) {
+	curve := TinyCurve
+
+	b.ReportAllocs()
+	b.StopTimer()
+	for i := 0; i < b.N; i++ {
+		if err := runEccLogBSGS(curve, b, 4); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StartTimer()
+}
+
+func TestEccLogBSGS_SingleThread(t *testing.T) {
 	const iterations = 2048
 	curve := TinyCurve
 
 	for i := 0; i < iterations; i++ {
-		if err := runEccLogBSGS(curve, noopBenchTimer{}); err != nil {
+		if err := runEccLogBSGS(curve, noopBenchTimer{}, 1); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestEccLogBSGS_MultiThread(t *testing.T) {
+	const iterations = 2048
+	curve := TinyCurve
+
+	for i := 0; i < iterations; i++ {
+		if err := runEccLogBSGS(curve, noopBenchTimer{}, 4); err != nil {
 			t.Fatal(err)
 		}
 	}

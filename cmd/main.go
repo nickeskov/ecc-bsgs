@@ -1,15 +1,25 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"log"
 	"math/big"
 
 	"github.com/nickeskov/ecc-bsgs/pkg"
 )
 
+var (
+	threads = flag.Int("threads", 1, "Threads count for parallel calculation of giant steps")
+)
+
 func main() {
+	flag.Parse()
+
 	curve := pkg.TinyCurve
 	params := curve.Params()
+
+	log.Printf("threads count = %d", *threads)
 
 	//var (
 	//	x   = new(big.Int)
@@ -32,7 +42,8 @@ func main() {
 	log.Printf("q = %s", q.String())
 	log.Printf("%d * p = q", x)
 
-	logarithm, steps, err := pkg.EccLogBSGS(curve, p, q)
+	ctx := context.TODO()
+	logarithm, steps, err := pkg.EccLogBSGS(ctx, *threads, curve, p, q)
 	if err != nil {
 		log.Fatalln(err)
 	}
