@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"log"
 	"math/big"
 
@@ -12,17 +11,17 @@ func main() {
 	curve := pkg.TinyCurve
 	params := curve.Params()
 
-	var (
-		x   = new(big.Int)
-		err error
-	)
-	for x.IsUint64() && x.Uint64() == 0 {
-		x, err = rand.Int(rand.Reader, params.N)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}
-	//x := big.NewInt(8684)
+	//var (
+	//	x   = new(big.Int)
+	//	err error
+	//)
+	//for x.IsUint64() && x.Uint64() == 0 {
+	//	x, err = rand.Int(rand.Reader, params.N)
+	//	if err != nil {
+	//		log.Fatalln(err)
+	//	}
+	//}
+	x := big.NewInt(8684)
 
 	p := pkg.Point{X: params.Gx, Y: params.Gy}
 	qX, qY := curve.ScalarMult(p.X, p.Y, x.Bytes())

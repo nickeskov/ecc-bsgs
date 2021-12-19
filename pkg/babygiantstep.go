@@ -6,6 +6,8 @@ import (
 	"math/big"
 )
 
+type precomputedStepsMap map[string]*big.Int
+
 func EccLogBSGS(curve stdelliptic.Curve, p Point, q Point) (*big.Int, *big.Int, error) {
 	if !curve.IsOnCurve(p.X, p.Y) {
 		return nil, nil, fmt.Errorf("point 'p' %s is not on curve %s", p.String(), curve.Params().Name)
@@ -19,7 +21,7 @@ func EccLogBSGS(curve stdelliptic.Curve, p Point, q Point) (*big.Int, *big.Int, 
 
 	// Compute the baby steps and store them in the 'precomputed' hash table.
 	r := Point{X: zero, Y: zero}
-	precomputed := map[string]*big.Int{
+	precomputed := precomputedStepsMap{
 		r.Key(): new(big.Int).Set(zero),
 	}
 
@@ -30,22 +32,54 @@ func EccLogBSGS(curve stdelliptic.Curve, p Point, q Point) (*big.Int, *big.Int, 
 	}
 
 	// Now compute the giant steps and check the hash table for any matching point.
-	negP := negPoint(p, curve.Params().P)
-	sX, sY := curve.ScalarMult(negP.X, negP.Y, sqrtN.Bytes())
+	negP := negPoint(p, curve.Params().P)                     // compute -P
+	sX, sY := curve.ScalarMult(negP.X, negP.Y, sqrtN.Bytes()) // compute -mP
+	s := Point{X: sX, Y: sY}                                  // s == -mP
 
-	r = q
-	s := Point{X: sX, Y: sY}
-
-	for b := big.NewInt(0); b.Cmp(sqrtN) < 0; b = b.Add(b, one) {
-		if a, ok := precomputed[r.Key()]; ok {
-			log := new(big.Int).Add(a, new(big.Int).Mul(sqrtN, b))
-			steps := new(big.Int).Add(sqrtN, b)
-			return log, steps, nil
-		}
-		rX, rY := curve.Add(r.X, r.Y, s.X, s.Y)
-		r = Point{X: rX, Y: rY}
+	a, b, err := giantSteps(curve, precomputed, q, s, zero, sqrtN)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to find log for p=%s and q=%s: %w", p, q, err)
 	}
-	return nil, nil, fmt.Errorf("failed to find log")
+	log := new(big.Int).Add(new(big.Int).Mul(sqrtN, b), a) // log = mb + a
+	steps := new(big.Int).Add(sqrtN, b)
+	return log, steps, nil
+}
+
+// giantSteps computes giant steps and returns a and b coefficients for equation 'log = bm + a' where m == sqrt(N)
+func giantSteps(
+	curve stdelliptic.Curve,
+	precomputed precomputedStepsMap,
+	q, s Point,
+	sqrtNStart, sqrtNEnd *big.Int,
+) (*big.Int, *big.Int, error) {
+	if sqrtNEnd.Cmp(sqrtNStart) == -1 {
+		panic(fmt.Sprintf("sqrtNEnd=%d < sqrtNStart=%d", sqrtNEnd, sqrtNStart))
+	}
+
+	r := q // Q - 0 * mP
+	sqrtNSub := new(big.Int).Sub(sqrtNEnd, sqrtNStart)
+
+	if sqrtNSub.IsUint64() {
+		sqrtNSubNative := sqrtNSub.Uint64()
+		for b := uint64(0); b < sqrtNSubNative; b++ {
+			if a, ok := precomputed[r.Key()]; ok {
+				bigB := new(big.Int).SetUint64(b)
+				bigB.Add(bigB, sqrtNStart) // restore b
+				return a, bigB, nil
+			}
+			rX, rY := curve.Add(r.X, r.Y, s.X, s.Y) // Q - b*mP; remember, that s == -mP
+			r = Point{X: rX, Y: rY}
+		}
+	} else { // doesn't fit into native uint64 type
+		for b := new(big.Int).Set(sqrtNStart); b.Cmp(sqrtNEnd) < 0; b = b.Add(b, one) {
+			if a, ok := precomputed[r.Key()]; ok {
+				return a, b, nil
+			}
+			rX, rY := curve.Add(r.X, r.Y, s.X, s.Y) // Q - b*mP; remember, that s == -mP
+			r = Point{X: rX, Y: rY}
+		}
+	}
+	return nil, nil, fmt.Errorf("failed to find a and b coefficients")
 }
 
 func negPoint(point Point, p *big.Int) Point {
