@@ -9,7 +9,7 @@ import (
 
 var ErcCtxDone = fmt.Errorf("context done")
 
-type precomputedStepsMap map[string]*big.Int
+type precomputedStepsMap map[string]big.Int
 
 func EccLogBSGS(ctx context.Context, threads int, curve stdelliptic.Curve, p Point, q Point) (*big.Int, *big.Int, error) {
 	if !curve.IsOnCurve(p.X, p.Y) {
@@ -28,13 +28,13 @@ func EccLogBSGS(ctx context.Context, threads int, curve stdelliptic.Curve, p Poi
 	// Compute the baby steps and store them in the 'precomputed' hash table.
 	r := Point{X: zero, Y: zero}
 	precomputed := precomputedStepsMap{
-		r.Key(): new(big.Int).Set(zero),
+		r.Key(): *new(big.Int).Set(zero),
 	}
 
 	for a := big.NewInt(1); a.Cmp(sqrtN) < 0; a = a.Add(a, one) {
 		x, y := curve.Add(r.X, r.Y, p.X, p.Y)
 		r = Point{X: x, Y: y}
-		precomputed[r.Key()] = new(big.Int).Set(a)
+		precomputed[r.Key()] = *new(big.Int).Set(a)
 	}
 
 	// Now compute the giant steps and check the hash table for any matching point.
@@ -134,7 +134,7 @@ func giantSteps(
 			if a, ok := precomputed[r.Key()]; ok {
 				bigB := new(big.Int).SetUint64(b)
 				bigB.Add(bigB, sqrtNStart) // restore b
-				return a, bigB, nil
+				return &a, bigB, nil
 			}
 			rX, rY := curve.Add(r.X, r.Y, s.X, s.Y) // Q - b*mP; remember, that s == -mP
 			r = Point{X: rX, Y: rY}
@@ -148,7 +148,7 @@ func giantSteps(
 				// continue
 			}
 			if a, ok := precomputed[r.Key()]; ok {
-				return a, b, nil
+				return &a, b, nil
 			}
 			rX, rY := curve.Add(r.X, r.Y, s.X, s.Y) // Q - b*mP; remember, that s == -mP
 			r = Point{X: rX, Y: rY}
