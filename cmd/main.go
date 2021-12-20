@@ -17,7 +17,7 @@ var (
 func main() {
 	flag.Parse()
 
-	curve := pkg.NormalCurve
+	curve := pkg.BigCurve
 	params := curve.Params()
 
 	log.Printf("threads count = %d", *threads)
@@ -32,7 +32,7 @@ func main() {
 	//		log.Fatalln(err)
 	//	}
 	//}
-	x := big.NewInt(446818759577)
+	x := big.NewInt(8684)
 
 	p := pkg.Point{X: params.Gx, Y: params.Gy}
 	qX, qY := curve.ScalarMult(p.X, p.Y, x.Bytes())

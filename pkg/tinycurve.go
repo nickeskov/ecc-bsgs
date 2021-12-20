@@ -16,16 +16,6 @@ var TinyCurve = &stdelliptic.CurveParams{
 	Name:    "TinyCurve",
 }
 
-//var NormalCurve = &stdelliptic.CurveParams{
-//	P:       big.NewInt(997197943997),
-//	N:       big.NewInt(131625653),
-//	B:       big.NewInt(540788122134),
-//	Gx:      big.NewInt(901539561580),
-//	Gy:      big.NewInt(671062096852),
-//	BitSize: 40,
-//	Name:    "NormalCurve",
-//}
-
 var NormalCurve = &stdelliptic.CurveParams{
 	P:       big.NewInt(1017406263565141),
 	N:       big.NewInt(446818759579),
@@ -34,6 +24,16 @@ var NormalCurve = &stdelliptic.CurveParams{
 	Gy:      big.NewInt(826173593427448),
 	BitSize: 40,
 	Name:    "NormalCurve",
+}
+
+var BigCurve = &stdelliptic.CurveParams{
+	P:       big.NewInt(4123125201868929481),
+	N:       big.NewInt(14921559061261),
+	B:       big.NewInt(1059908088893468482),
+	Gx:      big.NewInt(446260050860519043),
+	Gy:      big.NewInt(2223330371784956252),
+	BitSize: 62,
+	Name:    "BigCurve",
 }
 
 type Point struct {
