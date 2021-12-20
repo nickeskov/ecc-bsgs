@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/nickeskov/ecc-bsgs/pkg"
 )
@@ -16,7 +17,7 @@ var (
 func main() {
 	flag.Parse()
 
-	curve := pkg.TinyCurve
+	curve := pkg.NormalCurve
 	params := curve.Params()
 
 	log.Printf("threads count = %d", *threads)
@@ -31,7 +32,7 @@ func main() {
 	//		log.Fatalln(err)
 	//	}
 	//}
-	x := big.NewInt(8684)
+	x := big.NewInt(446818759577)
 
 	p := pkg.Point{X: params.Gx, Y: params.Gy}
 	qX, qY := curve.ScalarMult(p.X, p.Y, x.Bytes())
@@ -42,12 +43,15 @@ func main() {
 	log.Printf("q = %s", q.String())
 	log.Printf("%d * p = q", x)
 
+	now := time.Now()
+
 	ctx := context.TODO()
 	logarithm, steps, err := pkg.EccLogBSGS(ctx, *threads, curve, p, q)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	since := time.Since(now)
 
 	log.Printf("log(p, q) = %d", logarithm)
-	log.Printf("Took %d steps", steps)
+	log.Printf("Took %d steps, duration %v", steps, since)
 }
